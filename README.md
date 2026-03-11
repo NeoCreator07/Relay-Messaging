@@ -2,7 +2,8 @@
 
 A real-time chat app you can host on Netlify for free. No backend code, no server to run — just a single `index.html` powered by **Firebase Realtime Database**. Works across devices, browser tabs, and anyone on the same network visiting your URL.
 
----
+#Password
+jecholecko
 
 ## Features
 
