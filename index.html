@@ -975,6 +975,8 @@ function openToggleReadOnly(e, id) {
   document.getElementById('srv-modal').classList.add('show');
   setTimeout(() => document.getElementById('masterPwSrvInput').focus(), 50);
 }
+
+function closeSrvModal() {
   document.getElementById('srv-modal').classList.remove('show');
   document.getElementById('srvNameInput').disabled = false;
   document.getElementById('srvSubmitBtn').style.background = '';
@@ -990,7 +992,7 @@ function submitServer() {
   const btn   = document.getElementById('srvSubmitBtn');
   const action = btn.textContent;
 
-  if (action !== 'Delete' && (!name || name.length < 2)) { err.textContent = '⚠ Name must be at least 2 letters.'; return; }
+  if (action !== 'Delete' && action !== 'Lock' && action !== 'Unlock' && (!name || name.length < 2)) { err.textContent = '⚠ Name must be at least 2 letters.'; return; }
   if (!pw) { err.textContent = '⚠ Enter the master password.'; return; }
   err.textContent = ''; btn.disabled = true; btn.textContent = 'Checking…';
 
@@ -1032,6 +1034,8 @@ function submitServer() {
         document.getElementById('readonlyBar').classList.remove('show');
       }
       closeSrvModal();
+
+    } else if (action === 'Rename') {
       const newName = name.toLowerCase().replace(/\s+/g,'-');
       db.ref('servers/'+editingSrvId).update({ name: newName });
       if (currentSrv?.id === editingSrvId) {
@@ -1225,9 +1229,13 @@ function startEdit(wrap, key, data) {
   setTimeout(() => { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }, 30);
 }
 function sysMsg(text) {
-  const box=document.getElementById('messages'), w=document.createElement('div'); w.className='msg sys';
-  const t=document.createElement('span'); t.className='msg-text'; t.textContent=text;
-  w.appendChild(t); box.appendChild(w); box.scrollTop=box.scrollHeight;
+  const box=document.getElementById('messages');
+  const w=document.createElement('div'); w.className='msg sys';
+  const t=document.createElement('span'); t.className='msg-time'; t.textContent='';
+  const n=document.createElement('span'); n.className='msg-name'; n.textContent='';
+  const body=document.createElement('div'); body.className='msg-body';
+  const txt=document.createElement('span'); txt.className='msg-text'; txt.textContent=text;
+  body.appendChild(txt); w.append(t,n,body); box.appendChild(w); box.scrollTop=box.scrollHeight;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1309,4 +1317,9 @@ function fmt(ts){
   const d=new Date(ts);
   return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
 }
-function fmtSize(b){if(b<1024)return b+'B';if(b<1048576)return
+function fmtSize(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';return(b/1048576).toFixed(1)+'MB';}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function slugify(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
+</script>
+</body>
+</html>
