@@ -106,6 +106,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Roboto
 .srv-hash{font-family:'Roboto Mono',monospace;font-size:.78rem;color:var(--muted);flex-shrink:0}
 .srv-item.active .srv-hash{color:var(--accent);opacity:.6}
 .srv-lock{font-size:.72rem;margin-left:auto;flex-shrink:0;opacity:.5}
+.srv-ro{font-size:.7rem;flex-shrink:0;opacity:.7}
+.readonly-bar{display:none;align-items:center;gap:.6rem;padding:.45rem 1.6rem;background:rgba(249,200,70,.08);border-bottom:1px solid rgba(249,200,70,.2);font-family:'Roboto Mono',monospace;font-size:.72rem;color:#f9c846;flex-shrink:0;position:relative;z-index:1}
+.readonly-bar.show{display:flex}
 .srv-item:hover .srv-actions{opacity:1}
 .srv-actions{opacity:0;display:flex;gap:.2rem;margin-left:auto;transition:opacity .15s;flex-shrink:0}
 .srv-action-btn{background:none;border:none;padding:.12rem .28rem;cursor:pointer;font-size:.75rem;color:var(--dim);border-radius:4px;line-height:1;transition:color .15s,background .15s}
@@ -386,6 +389,7 @@ footer{padding:.9rem 1.6rem;background:var(--surface);border-top:1px solid var(-
       <button class="delete-chat-btn" onclick="promptDeleteChat()" id="deleteChatBtn" style="display:none">🗑 clear chat</button>
     </div>
     <div class="status-bar" id="statusBar"><span>⚠</span><span id="statusMsg">Reconnecting…</span></div>
+    <div class="readonly-bar" id="readonlyBar">🚫 <span>This server is read-only — only the admin can send messages</span></div>
     <div id="messages">
       <div class="empty" id="emptyState"><div class="empty-icon">💬</div><div class="empty-text">Pick a server to start chatting</div></div>
     </div>
@@ -581,15 +585,19 @@ async function sha256(s) {
 //  BOOT
 // ─────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+  try {
   firebase.initializeApp(FB_CONFIG);
   db      = firebase.database();
   storage = firebase.storage();
 
-  // dismiss splash after 1.8s then show login
-  setTimeout(() => {
-    document.getElementById('splash').classList.add('hidden');
-    setTimeout(() => document.getElementById('screen-name').classList.remove('hidden'), 300);
-  }, 1800);
+  // dismiss splash after 1.6s then show login — wrapped in try/catch so errors can't block it
+  function showLogin() {
+    try { document.getElementById('splash').classList.add('hidden'); } catch(e){}
+    try { document.getElementById('screen-name').classList.remove('hidden'); } catch(e){}
+  }
+  const splashTimer = setTimeout(showLogin, 1600);
+  // emergency fallback — if something goes wrong, force show login after 4s
+  setTimeout(() => { showLogin(); clearTimeout(splashTimer); }, 4000);
 
   // restore theme
   const savedTheme = localStorage.getItem('lc_theme') || 'dark';
@@ -624,6 +632,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById(id);
     el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); });
   });
+  } catch(bootErr) {
+    console.error('Boot error:', bootErr);
+    // ensure login screen always appears even if boot fails
+    document.getElementById('splash').classList.add('hidden');
+    document.getElementById('screen-name').classList.remove('hidden');
+  }
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -821,7 +835,7 @@ function filterServers(q) {
       const isActive = currentSrv?.id === id;
       const d = document.createElement('div');
       d.className = 'srv-item' + (isActive?' active':'');
-      d.innerHTML = `<span class="srv-hash">#</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(srv.name)}</span>${srv.private?'<span class="srv-lock">🔒</span>':''}<div class="srv-actions"><button class="srv-action-btn" title="Rename" onclick="openRenameServer(event,'${id}')">✏</button><button class="srv-action-btn del" title="Delete" onclick="openDeleteServer(event,'${id}')">✕</button></div>`;
+      d.innerHTML = `<span class="srv-hash">#</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(srv.name)}</span>${srv.private?'<span class="srv-lock">🔒</span>':''}${srv.readOnly?'<span class="srv-ro">🚫</span>':''}<div class="srv-actions"><button class="srv-action-btn" title="${srv.readOnly?'Unlock':'Lock read-only'}" onclick="openToggleReadOnly(event,'${id}')">${srv.readOnly?'🔓':'🚫'}</button><button class="srv-action-btn" title="Rename" onclick="openRenameServer(event,'${id}')">✏</button><button class="srv-action-btn del" title="Delete" onclick="openDeleteServer(event,'${id}')">✕</button></div>`;
       d.onclick = (e) => { if (!e.target.closest('.srv-actions')) switchServer(id, srv); };
       el.appendChild(d);
     });
@@ -852,18 +866,21 @@ function doSwitchServer(id, srv) {
     db.ref('messages/'+currentSrv.id).off('child_changed', srvChangeListeners[currentSrv.id]);
     delete srvChangeListeners[currentSrv.id];
   }
-  currentSrv = { id, name: srv.name };
+  currentSrv = { id, name: srv.name, readOnly: !!srv.readOnly };
   document.getElementById('chatTitle').textContent = srv.name;
   const lockEl = document.getElementById('chatLock');
   lockEl.style.display = srv.private ? 'inline' : 'none';
   document.getElementById('messages').innerHTML = '';
   document.getElementById('deleteServerName').textContent = '#'+srv.name;
-  document.getElementById('msgInput').disabled  = false;
-  document.getElementById('sendBtn').disabled   = false;
-  document.getElementById('fileBtn').disabled   = false;
-  document.getElementById('gifBtn').disabled    = false;
+  const isReadOnly = !!srv.readOnly;
+  document.getElementById('msgInput').disabled  = isReadOnly;
+  document.getElementById('sendBtn').disabled   = isReadOnly;
+  document.getElementById('fileBtn').disabled   = isReadOnly;
+  document.getElementById('gifBtn').disabled    = isReadOnly;
+  document.getElementById('msgInput').placeholder = isReadOnly ? 'This server is read-only…' : 'Message…';
+  document.getElementById('readonlyBar').classList.toggle('show', isReadOnly);
   document.getElementById('deleteChatBtn').style.display = 'block';
-  document.getElementById('msgInput').focus();
+  if (!isReadOnly) document.getElementById('msgInput').focus();
   renderSrvList(); broadcastPresence();
   const listener = db.ref('messages/'+id).limitToLast(100)
     .on('child_added', snap => { if (snap.val()) appendMsg(snap.key, snap.val()); });
@@ -944,7 +961,24 @@ function openDeleteServer(e, id) {
   setTimeout(() => document.getElementById('masterPwSrvInput').focus(), 50);
 }
 
-function closeSrvModal() {
+function openToggleReadOnly(e, id) {
+  e.stopPropagation();
+  editingSrvId = id;
+  const srv = servers[id];
+  const isRO = !!srv?.readOnly;
+  document.getElementById('srvModalTitle').textContent = isRO ? 'Unlock server' : 'Lock server (read-only)';
+  document.getElementById('srvSubmitBtn').textContent  = isRO ? 'Unlock' : 'Lock';
+  document.getElementById('srvSubmitBtn').style.background = isRO ? '' : 'var(--accent)';
+  document.getElementById('srvSubmitBtn').style.color      = isRO ? '' : 'var(--accent-text)';
+  document.getElementById('srvNameInput').value    = srv?.name || '';
+  document.getElementById('srvNameInput').disabled = true;
+  document.getElementById('srvCodeInput').value    = '';
+  document.getElementById('masterPwSrvInput').value = '';
+  document.getElementById('srv-err').textContent   = '';
+  document.getElementById('srvCodeField').style.display = 'none';
+  document.getElementById('srv-modal').classList.add('show');
+  setTimeout(() => document.getElementById('masterPwSrvInput').focus(), 50);
+}
   document.getElementById('srv-modal').classList.remove('show');
   document.getElementById('srvNameInput').disabled = false;
   document.getElementById('srvSubmitBtn').style.background = '';
@@ -971,7 +1005,22 @@ function submitServer() {
     const ok = storedHash ? pwHash === storedHash : pw === String(storedPlain||'');
     if (!ok) { err.textContent = '⚠ Wrong master password.'; btn.disabled=false; btn.textContent=action; return; }
 
-    if (action === 'Delete') {
+    if (action === 'Lock' || action === 'Unlock') {
+      const newRO = action === 'Lock';
+      db.ref('servers/'+editingSrvId).update({ readOnly: newRO });
+      if (currentSrv?.id === editingSrvId) {
+        currentSrv.readOnly = newRO;
+        const isRO = newRO;
+        document.getElementById('msgInput').disabled  = isRO;
+        document.getElementById('sendBtn').disabled   = isRO;
+        document.getElementById('fileBtn').disabled   = isRO;
+        document.getElementById('gifBtn').disabled    = isRO;
+        document.getElementById('msgInput').placeholder = isRO ? 'This server is read-only…' : 'Message…';
+        document.getElementById('readonlyBar').classList.toggle('show', isRO);
+      }
+      closeSrvModal();
+
+    } else if (action === 'Delete') {
       const id = editingSrvId;
       db.ref('servers/'+id).remove();
       db.ref('messages/'+id).remove();
@@ -984,10 +1033,9 @@ function submitServer() {
         document.getElementById('sendBtn').disabled = true;
         document.getElementById('fileBtn').disabled = true;
         document.getElementById('gifBtn').disabled = true;
+        document.getElementById('readonlyBar').classList.remove('show');
       }
       closeSrvModal();
-
-    } else if (action === 'Rename') {
       const newName = name.toLowerCase().replace(/\s+/g,'-');
       db.ref('servers/'+editingSrvId).update({ name: newName });
       if (currentSrv?.id === editingSrvId) {
