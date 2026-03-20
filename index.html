@@ -258,7 +258,17 @@ footer{padding:.9rem 1.6rem;background:var(--surface);border-top:1px solid var(-
 /* ── SERVER JOIN CODE PROMPT ── */
 #srv-join-modal .modal{max-width:320px}
 
-/* ── LIGHTBOX ── */
+/* ── EMBEDS ── */
+.msg-embed{margin-top:.4rem;border-left:3px solid var(--accent);border-radius:0 10px 10px 0;background:var(--surface);padding:.6rem .85rem;display:flex;flex-direction:column;gap:.3rem;max-width:360px;text-decoration:none;transition:border-color .15s}
+.msg-embed:hover{border-color:var(--blue)}
+.msg-embed-site{font-family:'Roboto Mono',monospace;font-size:.62rem;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.msg-embed-title{font-size:.88rem;font-weight:600;color:var(--blue);line-height:1.3}
+.msg-embed-desc{font-size:.8rem;color:var(--text2);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.msg-embed-img{width:100%;max-height:180px;object-fit:cover;border-radius:6px;margin-top:.2rem}
+/* ── NOTIFICATION BELL ── */
+.notif-btn{background:none;border:none;color:var(--dim);cursor:pointer;font-size:1rem;padding:.15rem;line-height:1;transition:color .15s;border-radius:5px}
+.notif-btn:hover{color:var(--accent)}
+.notif-btn.on{color:var(--accent)}
 #lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:50;align-items:center;justify-content:center;cursor:zoom-out}
 #lightbox.show{display:flex}
 #lightbox img{max-width:92vw;max-height:92vh;border-radius:10px;object-fit:contain}
@@ -325,10 +335,6 @@ footer{padding:.9rem 1.6rem;background:var(--surface);border-top:1px solid var(-
       <label>Display name</label>
       <input id="nameInput" type="text" placeholder="e.g. Sarah" maxlength="28" autocomplete="off"/>
     </div>
-    <div class="field">
-      <label>Join code</label>
-      <input id="codeInput" type="password" placeholder="Enter the code to join" maxlength="64" autocomplete="off"/>
-    </div>
     <div class="err-msg" id="name-err"></div>
     <button class="primary-btn" id="joinBtn" onclick="joinChat()">Start chatting →</button>
   </div>
@@ -356,6 +362,7 @@ footer{padding:.9rem 1.6rem;background:var(--surface);border-top:1px solid var(-
         </svg>
         <span style="font-family:'Roboto',sans-serif;font-size:.88rem;font-weight:700;color:var(--text);letter-spacing:-.01em">Relay</span>
       </div>
+      <button class="notif-btn" id="notifBtn" onclick="toggleNotifications()" title="Toggle notifications">🔔</button>
       <button class="sb-settings-btn" onclick="openSettings()" title="Settings">⚙</button>
     </div>
     <div class="sb-section">
@@ -618,8 +625,7 @@ window.addEventListener('DOMContentLoaded', () => {
     el.addEventListener('input', e => { e.target.value = e.target.value.replace(/[^a-zA-Z ]/g,''); });
   });
 
-  document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('codeInput').focus(); });
-  document.getElementById('codeInput').addEventListener('keydown', e => { if (e.key==='Enter') joinChat(); });
+  document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key==='Enter') joinChat(); });
   document.getElementById('msgInput').addEventListener('keydown', e => { if (e.key==='Enter') sendMsg(); });
   document.getElementById('srvNameInput').addEventListener('keydown', e => { if (e.key==='Enter') submitServer(); });
   document.getElementById('masterPwInput').addEventListener('keydown', e => { if (e.key==='Enter') deleteChat(); });
@@ -760,47 +766,35 @@ function updateSwatchActive() {
 //  JOIN
 // ─────────────────────────────────────────────────────────────
 function joinChat() {
-  const n    = document.getElementById('nameInput').value.trim();
-  const code = document.getElementById('codeInput').value.trim();
-  const err  = document.getElementById('name-err');
-  const btn  = document.getElementById('joinBtn');
-  if (!n || n.length < 2)  { err.textContent = '⚠ Name must be at least 2 letters.'; return; }
-  if (!code)                { err.textContent = '⚠ Enter the join code.'; return; }
-  err.textContent = ''; btn.textContent = 'Checking…'; btn.disabled = true;
+  const n   = document.getElementById('nameInput').value.trim();
+  const err = document.getElementById('name-err');
+  const btn = document.getElementById('joinBtn');
+  if (!n || n.length < 2) { err.textContent = '⚠ Name must be at least 2 letters.'; return; }
+  err.textContent = ''; btn.textContent = 'Joining…'; btn.disabled = true;
 
-  Promise.all([db.ref('config').get(), db.ref('presence').get()])
-    .then(([cfgSnap, presSnap]) => {
-      const cfg = cfgSnap.val() || {};
-      // plain text join code check
-      if (code !== 'qwerty') {
-        err.textContent = '⚠ Wrong code.';
-        document.getElementById('codeInput').value = '';
-        document.getElementById('codeInput').focus();
-        reset(); return;
-      }
+  // check name uniqueness against active presence
+  db.ref('presence').get().then(presSnap => {
+    const now = Date.now();
+    let nameTaken = false;
+    presSnap.forEach(child => {
+      const d = child.val();
+      if (d && d.name && d.ts && (now - d.ts) < 20000 && d.name.toLowerCase() === n.toLowerCase()) nameTaken = true;
+    });
+    if (nameTaken) { err.textContent = '⚠ That name is already taken. Pick another.'; btn.textContent = 'Start chatting →'; btn.disabled = false; return; }
 
-      // check name uniqueness — only against entries active in last 20s
-      const now = Date.now();
-      let nameTaken = false;
-      presSnap.forEach(child => {
-        const d = child.val();
-        if (d && d.name && d.ts && (now - d.ts) < 20000 && d.name.toLowerCase() === n.toLowerCase()) nameTaken = true;
-      });
-      if (nameTaken) { err.textContent = '⚠ That name is already in use. Pick another.'; reset(); return; }
+    // fetch giphy key if set
+    db.ref('config/giphyKey').get().then(s => { if (s.val()) giphyKey = s.val(); });
 
-      if (cfg.giphyKey) giphyKey = cfg.giphyKey;
-
-      myName = n; myId = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
-      localStorage.setItem('lc_name', myName);
-      document.getElementById('screen-name').classList.add('hidden');
-      document.getElementById('app').style.display = 'flex';
-      document.getElementById('meName').textContent = myName;
-      document.getElementById('meAvatar').textContent = myName[0].toUpperCase();
-      loadServers(); startPresence();
-      if (activeVantaId && activeVantaId !== 'none') setTimeout(() => applyVanta(activeVantaId), 400);
-    }).catch(e => { err.textContent = '⚠ ' + (e.message||'Connection error'); reset(); });
-
-  function reset() { btn.textContent = 'Start chatting →'; btn.disabled = false; }
+    myName = n; myId = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+    localStorage.setItem('lc_name', myName);
+    document.getElementById('screen-name').classList.add('hidden');
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('meName').textContent = myName;
+    document.getElementById('meAvatar').textContent = myName[0].toUpperCase();
+    loadServers(); startPresence();
+    updateNotifBtn();
+    if (activeVantaId && activeVantaId !== 'none') setTimeout(() => applyVanta(activeVantaId), 400);
+  }).catch(e => { err.textContent = '⚠ ' + (e.message || 'Connection error'); btn.textContent = 'Start chatting →'; btn.disabled = false; });
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1172,6 +1166,9 @@ function buildMsgContent(body, data) {
     row.appendChild(txt);
     if (data.edited) { const e=document.createElement('span'); e.className='msg-edited'; e.textContent='(edited)'; row.appendChild(e); }
     body.appendChild(row);
+    // detect URLs and render embeds
+    const urlMatch = data.text && data.text.match(/https?:\/\/[^\s]+/);
+    if (urlMatch) renderEmbed(body, urlMatch[0]);
   } else if (type==='image'||type==='gif') {
     const img=document.createElement('img'); img.className='msg-img'; img.src=data.url; img.alt=data.fileName||''; img.loading='lazy';
     img.onclick=()=>{ document.getElementById('lightboxImg').src=data.url; document.getElementById('lightbox').classList.add('show'); };
@@ -1184,6 +1181,35 @@ function buildMsgContent(body, data) {
     const fs=document.createElement('span'); fs.className='msg-file-size'; fs.textContent=fmtSize(data.fileSize||0);
     info.append(fn,fs); a.append(icon,info); body.appendChild(a);
   }
+}
+
+const embedCache = {};
+function renderEmbed(body, url) {
+  // skip image/gif/video direct links — already shown inline
+  if (/\.(png|jpg|jpeg|gif|webp|mp4|webm)(\?|$)/i.test(url)) return;
+  // use a CORS-friendly open graph proxy
+  const proxy = `https://api.microlink.io/?url=${encodeURIComponent(url)}&palette=false`;
+  if (embedCache[url] === null) return; // known failure
+  if (embedCache[url]) { appendEmbedCard(body, embedCache[url], url); return; }
+  fetch(proxy).then(r=>r.json()).then(d=>{
+    if (d.status !== 'success' || !d.data) { embedCache[url]=null; return; }
+    const meta = { title: d.data.title, desc: d.data.description, image: d.data.image?.url, site: d.data.publisher || new URL(url).hostname };
+    if (!meta.title) { embedCache[url]=null; return; }
+    embedCache[url] = meta;
+    appendEmbedCard(body, meta, url);
+  }).catch(()=>{ embedCache[url]=null; });
+}
+
+function appendEmbedCard(body, meta, url) {
+  const a = document.createElement('a');
+  a.className = 'msg-embed'; a.href = url; a.target = '_blank'; a.rel = 'noopener';
+  if (meta.site) { const s=document.createElement('div'); s.className='msg-embed-site'; s.textContent=meta.site; a.appendChild(s); }
+  if (meta.title) { const t=document.createElement('div'); t.className='msg-embed-title'; t.textContent=meta.title; a.appendChild(t); }
+  if (meta.desc)  { const d=document.createElement('div'); d.className='msg-embed-desc'; d.textContent=meta.desc; a.appendChild(d); }
+  if (meta.image) { const i=document.createElement('img'); i.className='msg-embed-img'; i.src=meta.image; i.loading='lazy'; a.appendChild(i); }
+  body.appendChild(a);
+  // scroll after image loads
+  if (meta.image) { const box=document.getElementById('messages'); a.querySelector('img').onload=()=>box.scrollTop=box.scrollHeight; }
 }
 
 function appendMsg(key, data) {
@@ -1200,6 +1226,50 @@ function appendMsg(key, data) {
     nameEl.appendChild(editBtn);
   }
   wrap.append(time, nameEl, body); box.appendChild(wrap); box.scrollTop=box.scrollHeight;
+  // fire notification for messages from others
+  if (!isSelf && data.name && notificationsOn && document.hidden) {
+    fireNotification(data.name, data.text || (data.type==='image'?'📷 Image':data.type==='gif'?'🎞 GIF':'📎 File'));
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────
+let notificationsOn = localStorage.getItem('lc_notif') === '1';
+function updateNotifBtn() {
+  const btn = document.getElementById('notifBtn');
+  if (!btn) return;
+  btn.textContent = notificationsOn ? '🔔' : '🔕';
+  btn.classList.toggle('on', notificationsOn);
+  btn.title = notificationsOn ? 'Notifications on' : 'Notifications off';
+}
+function toggleNotifications() {
+  if (!('Notification' in window)) { alert('Your browser does not support notifications.'); return; }
+  if (notificationsOn) {
+    notificationsOn = false;
+    localStorage.setItem('lc_notif', '0');
+    updateNotifBtn();
+    return;
+  }
+  Notification.requestPermission().then(perm => {
+    if (perm === 'granted') {
+      notificationsOn = true;
+      localStorage.setItem('lc_notif', '1');
+      updateNotifBtn();
+      new Notification('Relay notifications on', { body: 'You\'ll be notified of new messages.', icon: '' });
+    } else {
+      alert('Notification permission denied. Please enable it in browser settings.');
+    }
+  });
+}
+function fireNotification(sender, text) {
+  if (Notification.permission !== 'granted') return;
+  const n = new Notification(sender + ' • Relay', {
+    body: text ? (text.length > 80 ? text.slice(0,80)+'…' : text) : '',
+    tag: 'relay-msg',
+    renotify: true,
+  });
+  n.onclick = () => { window.focus(); n.close(); };
 }
 
 function startEdit(wrap, key, data) {
