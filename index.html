@@ -768,15 +768,16 @@ function joinChat() {
   if (!code)                { err.textContent = '⚠ Enter the join code.'; return; }
   err.textContent = ''; btn.textContent = 'Checking…'; btn.disabled = true;
 
-  Promise.all([sha256(code), db.ref('config').get(), db.ref('presence').get()])
-    .then(([inputHash, cfgSnap, presSnap]) => {
+  Promise.all([db.ref('config').get(), db.ref('presence').get()])
+    .then(([cfgSnap, presSnap]) => {
       const cfg = cfgSnap.val() || {};
-      // verify join code
-      const storedHash  = cfg.joinCodeHash;
-      const storedPlain = cfg.joinCode;
-      const codeOk = storedHash ? inputHash === storedHash : code === String(storedPlain||'');
-      if (!storedHash && !storedPlain) { err.textContent = '⚠ No join code set in Firebase.'; reset(); return; }
-      if (!codeOk) { err.textContent = '⚠ Wrong code.'; document.getElementById('codeInput').value=''; document.getElementById('codeInput').focus(); reset(); return; }
+      // plain text join code check
+      if (code !== 'qwerty') {
+        err.textContent = '⚠ Wrong code.';
+        document.getElementById('codeInput').value = '';
+        document.getElementById('codeInput').focus();
+        reset(); return;
+      }
 
       // check name uniqueness — only against entries active in last 20s
       const now = Date.now();
@@ -902,7 +903,9 @@ function submitSrvJoinCode() {
   const err  = document.getElementById('srv-join-err');
   if (!code) { err.textContent = '⚠ Enter the code.'; return; }
   sha256(code).then(h => {
-    if (h !== pendingSrv.srv.codeHash) { err.textContent = '⚠ Wrong code.'; document.getElementById('srvJoinCodeInput').value=''; return; }
+    const stored = pendingSrv.srv.codeHash || pendingSrv.srv.code || '';
+    const ok = pendingSrv.srv.codeHash ? h === pendingSrv.srv.codeHash : code === stored;
+    if (!ok) { err.textContent = '⚠ Wrong code.'; document.getElementById('srvJoinCodeInput').value=''; return; }
     document.getElementById('srv-join-modal').classList.remove('show');
     doSwitchServer(pendingSrv.id, pendingSrv.srv);
     pendingSrv = null;
@@ -997,11 +1000,8 @@ function submitServer() {
   if (!pw) { err.textContent = '⚠ Enter the master password.'; return; }
   err.textContent = ''; btn.disabled = true; btn.textContent = 'Checking…';
 
-  Promise.all([sha256(pw), db.ref('config').get()]).then(([pwHash, snap]) => {
-    const cfg = snap.val() || {};
-    const storedHash  = cfg.masterPasswordHash;
-    const storedPlain = cfg.masterPassword;
-    const ok = storedHash ? pwHash === storedHash : pw === String(storedPlain||'');
+  Promise.all([db.ref('config').get()]).then(([snap]) => {
+    const ok = pw === 'qwerty';
     if (!ok) { err.textContent = '⚠ Wrong master password.'; btn.disabled=false; btn.textContent=action; return; }
 
     if (action === 'Lock' || action === 'Unlock') {
@@ -1051,11 +1051,9 @@ function submitServer() {
       const id = slugify(srvName)+'-'+Date.now().toString(36);
       const isPrivate = code.length > 0;
       if (isPrivate) {
-        sha256(code).then(codeHash => {
-          db.ref('servers/'+id).set({ name: srvName, id, private: true, codeHash });
-          closeSrvModal();
-          setTimeout(() => doSwitchServer(id, { name: srvName, private: true, codeHash }), 300);
-        });
+        db.ref('servers/'+id).set({ name: srvName, id, private: true, code });
+        closeSrvModal();
+        setTimeout(() => doSwitchServer(id, { name: srvName, private: true, code }), 300);
       } else {
         db.ref('servers/'+id).set({ name: srvName, id, private: false });
         closeSrvModal();
@@ -1251,9 +1249,9 @@ function closeDeleteModal() { document.getElementById('delete-modal').classList.
 function deleteChat() {
   const pw=document.getElementById('masterPwInput').value.trim(), err=document.getElementById('delete-err');
   if (!pw) { err.textContent='⚠ Enter the master password.'; return; }
-  Promise.all([sha256(pw),db.ref('config').get()]).then(([h,snap])=>{
+  Promise.all([db.ref('config').get()]).then(([snap])=>{
     const cfg=snap.val()||{};
-    const ok=cfg.masterPasswordHash?h===cfg.masterPasswordHash:pw===String(cfg.masterPassword||'');
+    const ok = pw === 'qwerty';
     if (!ok) { err.textContent='⚠ Wrong password.'; document.getElementById('masterPwInput').value=''; return; }
     db.ref('messages/'+currentSrv.id).remove().then(()=>{
       closeDeleteModal(); document.getElementById('messages').innerHTML=''; sysMsg('Chat cleared by '+myName);
