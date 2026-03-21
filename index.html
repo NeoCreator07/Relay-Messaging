@@ -69,16 +69,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Roboto
 .field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
 .field input::placeholder{color:var(--dim)}
 .field select option{background:var(--card);color:var(--text)}
-.primary-btn{padding:.82rem;background:var(--accent);color:var(--accent-text);font-family:'Roboto',sans-serif;font-size:.88rem;font-weight:700;border:none;border-radius:10px;cursor:pointer;transition:opacity .15s,transform .1s;letter-spacing:.02em}
+.primary-btn{padding:.82rem;background:var(--accent);color:var(--accent-text);font-family:'Roboto Mono',monospace;font-size:.82rem;font-weight:700;border:none;border-radius:10px;cursor:pointer;transition:opacity .15s,transform .1s;letter-spacing:.06em;text-transform:uppercase}
 .primary-btn:hover{opacity:.88}
 .primary-btn:active{transform:scale(.98)}
 .primary-btn:disabled{opacity:.45;cursor:not-allowed}
-.ghost-btn{padding:.65rem 1rem;background:none;border:1px solid var(--border2);color:var(--text2);font-family:'Roboto',sans-serif;font-size:.82rem;font-weight:500;border-radius:10px;cursor:pointer;transition:border-color .2s,color .2s}
+.ghost-btn{padding:.65rem 1rem;background:none;border:1px solid var(--border2);color:var(--text2);font-family:'Roboto Mono',monospace;font-size:.75rem;font-weight:500;border-radius:10px;cursor:pointer;transition:border-color .2s,color .2s;letter-spacing:.04em}
 .ghost-btn:hover{border-color:var(--text);color:var(--text)}
 .err-msg{font-family:'Roboto Mono',monospace;font-size:.72rem;color:var(--danger);min-height:1rem}
 
 /* ── APP ── */
-#app{display:none;height:100vh;flex-direction:row}
+#app{display:none;height:100vh;flex-direction:row;background:#0c0e14}
 
 /* ── SIDEBAR ── */
 #sidebar-wrap{position:relative;flex-shrink:0;display:flex;width:260px;transition:width .28s cubic-bezier(.4,0,.2,1)}
@@ -156,7 +156,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Roboto
 .pm-save-btn:hover{opacity:.85}
 
 /* ── MAIN ── */
-#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;position:relative;}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;position:relative;background:transparent;}
 #vanta-bg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;overflow:hidden;}
 #vanta-bg canvas{display:block;width:100%!important;height:100%!important;}
 .readonly-bar{display:none;align-items:center;gap:.6rem;padding:.4rem 1.4rem;background:rgba(249,200,70,.08);border-bottom:1px solid rgba(249,200,70,.2);font-family:'Roboto Mono',monospace;font-size:.72rem;color:#f9c846;flex-shrink:0;position:relative;z-index:2}
@@ -271,15 +271,15 @@ footer{padding:.85rem 1rem;background:rgba(13,15,22,.72);backdrop-filter:blur(16
 .toggle input:checked ~ .toggle-thumb{transform:translateX(18px)}
 
 /* ── GIF PICKER ── */
-#gif-modal .modal{max-width:480px}
+#gif-modal .modal{max-width:520px;width:100%}
 .gif-search-row{display:flex;gap:.5rem}
 .gif-search-row input{flex:1;background:var(--input-bg);border:1px solid var(--muted);border-radius:8px;padding:.6rem .9rem;color:var(--text);font-family:'Roboto',sans-serif;font-size:.85rem;font-weight:500;outline:none}
 .gif-search-row input:focus{border-color:var(--accent)}
-.gif-search-btn{background:var(--accent);color:var(--accent-text);border:none;border-radius:8px;padding:.6rem 1rem;font-family:'Roboto',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer}
-.gif-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;overflow-y:auto;margin-top:.3rem;max-height:320px}
+.gif-search-btn{background:var(--accent);color:var(--accent-text);border:none;border-radius:8px;padding:.6rem 1rem;font-family:'Roboto Mono',monospace;font-size:.78rem;font-weight:700;cursor:pointer;letter-spacing:.04em}
+.gif-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;overflow-y:auto;margin-top:.5rem;max-height:340px;width:100%}
 .gif-grid::-webkit-scrollbar{width:3px}
 .gif-grid::-webkit-scrollbar-thumb{background:var(--muted)}
-.gif-item{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color .15s}
+.gif-item{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color .15s;width:100%;display:block}
 .gif-item:hover{border-color:var(--accent)}
 .gif-item img{width:100%;height:100%;object-fit:cover;display:block}
 .gif-empty{font-family:'Roboto Mono',monospace;font-size:.75rem;color:var(--dim);text-align:center;padding:2rem;grid-column:span 3}
@@ -296,7 +296,15 @@ footer{padding:.85rem 1rem;background:rgba(13,15,22,.72);backdrop-filter:blur(16
 .typing-dot:nth-child(2){animation-delay:.2s}
 .typing-dot:nth-child(3){animation-delay:.4s}
 @keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
-/* ── MESSAGE CONTEXT MENU ── */
+/* ── FILE PREVIEW BAR ── */
+#file-bar{display:none;align-items:center;gap:.65rem;padding:.5rem 1rem;background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.07);flex-shrink:0;position:relative;z-index:2}
+#file-bar.show{display:flex}
+.file-bar-thumb{width:36px;height:36px;border-radius:7px;object-fit:cover;border:1px solid rgba(255,255,255,.12);flex-shrink:0;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.file-bar-info{flex:1;min-width:0}
+.file-bar-name{font-family:'Roboto Mono',monospace;font-size:.75rem;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.file-bar-size{font-family:'Roboto Mono',monospace;font-size:.62rem;color:var(--dim);margin-top:.1rem}
+.file-bar-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:1rem;padding:.1rem .3rem;border-radius:4px;transition:color .15s;flex-shrink:0;line-height:1}
+.file-bar-close:hover{color:var(--danger)}
 #msg-ctx-menu{position:fixed;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.35rem;display:flex;flex-direction:column;gap:.05rem;box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:200;min-width:150px;animation:fadeUp .12s ease both}
 #msg-ctx-menu.hidden{display:none}
 .ctx-item{display:flex;align-items:center;gap:.6rem;padding:.52rem .75rem;border-radius:7px;cursor:pointer;font-size:.85rem;color:var(--text);transition:background .12s;font-family:'Roboto',sans-serif;border:none;background:none;width:100%;text-align:left}
@@ -498,6 +506,22 @@ footer{padding:.85rem 1rem;background:rgba(13,15,22,.72);backdrop-filter:blur(16
       <span class="typing-text" id="typingText"></span>
     </div>
     <footer>
+      <div id="file-bar">
+        <div class="file-bar-thumb" id="fileBarThumb">📎</div>
+        <div class="file-bar-info">
+          <div class="file-bar-name" id="fileBarName"></div>
+          <div class="file-bar-size" id="fileBarSize"></div>
+        </div>
+        <button class="file-bar-close" onclick="clearPendingFile()" title="Remove">✕</button>
+      </div>
+      <div id="gif-bar" style="display:none;align-items:center;gap:.7rem;padding:.45rem 1rem;background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.07);flex-shrink:0;position:relative;z-index:2">
+        <img id="gifBarThumb" src="" style="width:42px;height:42px;object-fit:cover;border-radius:7px;flex-shrink:0;border:1px solid rgba(255,255,255,.1)" alt="GIF"/>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Roboto Mono',monospace;font-size:.65rem;color:var(--blue);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.15rem">GIF ready to send</div>
+          <div id="gifBarTitle" style="font-size:.8rem;color:var(--dim);overflow:hidden;white-space:nowrap;text-overflow:ellipsis"></div>
+        </div>
+        <button onclick="clearPendingGif()" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:1rem;padding:.1rem .3rem;border-radius:4px;transition:color .15s;line-height:1" title="Remove">✕</button>
+      </div>
       <div id="reply-bar">
         <div class="reply-bar-indicator"></div>
         <div class="reply-bar-content">
@@ -975,6 +999,7 @@ function doSwitchServer(id, srv) {
   lockEl.style.display = srv.private ? 'inline' : 'none';
   document.getElementById('messages').innerHTML = '';
   clearReply();
+  clearPendingFile();
   document.getElementById('deleteServerName').textContent = '#'+srv.name;
   const isReadOnly = !!srv.readOnly;
   document.getElementById('msgInput').disabled  = isReadOnly;
@@ -1194,10 +1219,33 @@ function censor(text) {
 function sendMsg() {
   if (!currentSrv) return;
   const inp = document.getElementById('msgInput');
-  const raw = inp.value.trim(); if (!raw) return;
+  const raw = inp.value.trim();
+  setTyping(false);
+
+  // if a gif is staged, send it
+  if (pendingGif) {
+    const gif = pendingGif;
+    inp.value = '';
+    clearPendingGif();
+    const msg = { name:myName, ts:firebase.database.ServerValue.TIMESTAMP, type:'gif', url:gif.url, fileName:gif.title };
+    if (replyingTo) { msg.replyTo = { key:replyingTo.key, name:replyingTo.name, text:replyingTo.text }; clearReply(); }
+    db.ref('messages/'+currentSrv.id).push(msg);
+    return;
+  }
+
+  // if a file is staged, upload it (with optional caption)
+  if (pendingFile) {
+    const file = pendingFile;
+    const caption = raw || '';
+    inp.value = '';
+    clearPendingFile();
+    uploadAndSendFile(file, caption);
+    return;
+  }
+
+  if (!raw) return;
   inp.value = '';
   const msg = { name: myName, text: censor(raw), ts: firebase.database.ServerValue.TIMESTAMP, type: 'text' };
-  setTyping(false);
   if (replyingTo) {
     msg.replyTo = { key: replyingTo.key, name: replyingTo.name, text: replyingTo.text };
     clearReply();
@@ -1207,40 +1255,63 @@ function sendMsg() {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  FILE UPLOAD
+//  FILE UPLOAD  (staged — picked locally, uploaded on send)
 // ─────────────────────────────────────────────────────────────
+let pendingFile = null;
+let pendingGif  = null; // { url, title, preview }
+
 function handleFileUpload(input) {
-  const file = input.files[0]; if (!file || !currentSrv) return;
+  const file = input.files[0]; if (!file) return;
   input.value = '';
+  pendingFile = file;
+  const isImage = file.type.startsWith('image/');
+  const thumb = document.getElementById('fileBarThumb');
+  document.getElementById('fileBarName').textContent = file.name;
+  document.getElementById('fileBarSize').textContent = fmtSize(file.size);
+  if (isImage) {
+    const reader = new FileReader();
+    reader.onload = e => { thumb.innerHTML = `<img src="${e.target.result}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;display:block"/>`; };
+    reader.readAsDataURL(file);
+  } else {
+    thumb.innerHTML = '📎';
+    thumb.style.fontSize = '1.3rem';
+  }
+  document.getElementById('file-bar').classList.add('show');
+  document.getElementById('msgInput').focus();
+}
+
+function clearPendingFile() {
+  pendingFile = null;
+  document.getElementById('file-bar').classList.remove('show');
+  document.getElementById('fileBarThumb').innerHTML = '📎';
+  document.getElementById('fileBarName').textContent = '';
+  document.getElementById('fileBarSize').textContent = '';
+}
+
+function clearPendingGif() {
+  pendingGif = null;
+  document.getElementById('gif-bar').style.display = 'none';
+  document.getElementById('gifBarThumb').src = '';
+  document.getElementById('gifBarTitle').textContent = '';
+}
+
+function uploadAndSendFile(file, caption) {
+  if (!currentSrv || !file) return;
   const isImage = file.type.startsWith('image/');
   const path = `uploads/${currentSrv.id}/${Date.now()}_${file.name}`;
-  const task = storage.ref(path).put(file);
-  const progId = 'prog-'+Date.now();
-  appendProgress(progId, file.name);
-  task.on('state_changed',
-    snap => {
-      const pct = Math.round(snap.bytesTransferred/snap.totalBytes*100);
-      const bar = document.getElementById('bar-'+progId);
-      const lbl = document.getElementById('lbl-'+progId);
-      if (bar) bar.style.width = pct+'%';
-      if (lbl) lbl.textContent = file.name+' — '+pct+'%';
-    },
-    err => { removeProgress(progId); sysMsg('⚠ Upload failed: '+err.message); },
-    () => task.snapshot.ref.getDownloadURL().then(url => {
-      removeProgress(progId);
-      db.ref('messages/'+currentSrv.id).push({ name:myName, ts:firebase.database.ServerValue.TIMESTAMP, type:isImage?'image':'file', url, fileName:file.name, fileSize:file.size });
-    })
-  );
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true; btn.textContent = '…';
+  storage.ref(path).put(file).then(snap => snap.ref.getDownloadURL()).then(url => {
+    const msg = { name:myName, ts:firebase.database.ServerValue.TIMESTAMP, type:isImage?'image':'file', url, fileName:file.name, fileSize:file.size };
+    if (caption) msg.text = caption;
+    if (replyingTo) { msg.replyTo = { key:replyingTo.key, name:replyingTo.name, text:replyingTo.text }; clearReply(); }
+    db.ref('messages/'+currentSrv.id).push(msg);
+    btn.disabled = false; btn.textContent = '↑';
+  }).catch(e => {
+    sysMsg('⚠ Upload failed: ' + e.message);
+    btn.disabled = false; btn.textContent = '↑';
+  });
 }
-function appendProgress(id, name) {
-  const box=document.getElementById('messages'), wrap=document.createElement('div');
-  wrap.className='msg sys'; wrap.id='prog-'+id;
-  const body=document.createElement('div'); body.className='msg-body';
-  const row=document.createElement('div'); row.className='upload-progress';
-  row.innerHTML=`<span id="lbl-${id}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)} — 0%</span><div class="progress-bar-wrap"><div class="progress-bar" id="bar-${id}" style="width:0%"></div></div>`;
-  body.appendChild(row); wrap.appendChild(body); box.appendChild(wrap); box.scrollTop=box.scrollHeight;
-}
-function removeProgress(id) { const el=document.getElementById('prog-'+id); if(el)el.remove(); }
 
 // ─────────────────────────────────────────────────────────────
 //  GIF PICKER (Giphy)
@@ -1268,7 +1339,14 @@ function searchGifs(query) {
       const item=document.createElement('div'); item.className='gif-item';
       const img=document.createElement('img'); img.src=preview; img.loading='lazy';
       item.appendChild(img);
-      item.onclick=()=>{ db.ref('messages/'+currentSrv.id).push({name:myName,ts:firebase.database.ServerValue.TIMESTAMP,type:'gif',url:full,fileName:gif.title||'GIF'}); closeGifModal(); };
+      item.onclick = () => {
+        pendingGif = { url: full, title: gif.title || 'GIF', preview };
+        document.getElementById('gifBarThumb').src = preview;
+        document.getElementById('gifBarTitle').textContent = gif.title || 'GIF';
+        document.getElementById('gif-bar').style.display = 'flex';
+        closeGifModal();
+        document.getElementById('msgInput').focus();
+      };
       grid.appendChild(item);
     });
   }).catch(()=>{grid.innerHTML='<div class="gif-empty">Failed to load</div>';});
@@ -1706,7 +1784,9 @@ document.addEventListener('click', e => {
 function fmt(ts){
   if(!ts)return'';
   const d=new Date(ts);
-  return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+  let h=d.getHours(), m=d.getMinutes(), ampm=h>=12?'PM':'AM';
+  h=h%12||12;
+  return h+':'+(m<10?'0':'')+m+' '+ampm;
 }
 function fmtSize(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';return(b/1048576).toFixed(1)+'MB';}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
