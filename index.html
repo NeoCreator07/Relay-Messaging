@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Relay</title>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
 <style>
 /* ── RELAY LOGO ── */
@@ -17,11 +17,18 @@
 /* ── SPLASH SCREEN ── */
 #splash{position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,#1a0533 0%,#2d0a5e 40%,#0f0820 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1.2rem;transition:opacity .5s ease;}
 #splash.gone{opacity:0;pointer-events:none;visibility:hidden;}
-.splash-logo{display:flex;flex-direction:column;align-items:center;gap:1rem;animation:splashPop .6s cubic-bezier(.34,1.56,.64,1) both}
-.splash-logo-icon{width:80px;height:80px;border-radius:22px;background:linear-gradient(135deg,#7c3aed,#4f1d96);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 40px rgba(124,58,237,.5),0 0 0 1px rgba(255,255,255,.08)}
-.splash-wordmark{font-family:'Roboto',sans-serif;font-size:2rem;font-weight:700;background:linear-gradient(135deg,#ffffff 0%,#c4b5fd 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.02em}
+.splash-logo{display:flex;flex-direction:column;align-items:center;gap:1.2rem;animation:splashPop .6s cubic-bezier(.34,1.56,.64,1) both}
+.splash-brands{display:flex;align-items:center;gap:1.8rem}
+.splash-brand-item{display:flex;flex-direction:column;align-items:center;gap:.55rem}
+.splash-brand-icon{width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.splash-brand-icon.relay{background:linear-gradient(135deg,#7c3aed,#4f1d96);box-shadow:0 8px 32px rgba(124,58,237,.45),0 0 0 1px rgba(255,255,255,.08)}
+.splash-brand-icon.hydra{background:linear-gradient(135deg,#0f4c81,#0a2a4a);box-shadow:0 8px 32px rgba(15,76,129,.5),0 0 0 1px rgba(255,255,255,.08)}
+.splash-brand-name{font-size:1.5rem;font-weight:900;letter-spacing:.04em}
+.splash-brand-name.relay-name{font-family:'Roboto',sans-serif;background:linear-gradient(135deg,#ffffff 0%,#c4b5fd 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.splash-brand-name.hydra-name{font-family:'Orbitron',monospace;background:linear-gradient(135deg,#60c8ff 0%,#0ea5e9 50%,#38bdf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:.12em}
+.splash-divider{width:1px;height:60px;background:linear-gradient(to bottom,transparent,rgba(255,255,255,.2),transparent);flex-shrink:0}
 .splash-sub{font-family:'Roboto',sans-serif;font-size:.82rem;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;animation:fadeUp .5s .3s ease both}
-.splash-dots{display:flex;gap:.4rem;margin-top:.5rem;animation:fadeUp .4s .5s ease both}
+.splash-dots{display:flex;gap:.4rem;margin-top:.2rem;animation:fadeUp .4s .5s ease both}
 .splash-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2);animation:pulseDot 1.2s ease infinite}
 .splash-dot:nth-child(2){animation-delay:.2s}
 .splash-dot:nth-child(3){animation-delay:.4s}
@@ -231,7 +238,7 @@ html,body{height:100%;background:#0c0e14;color:var(--text);font-family:'Roboto',
 .progress-bar-wrap{flex:1;height:3px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
 .progress-bar{height:100%;background:var(--accent);border-radius:3px;transition:width .2s}
 /* ── FOOTER ── */
-footer{padding:.85rem 1rem;background:rgba(13,15,22,.72);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid rgba(255,255,255,.07);flex-shrink:0;position:relative;z-index:2}
+footer{padding:.85rem 1rem;background:transparent;border-top:none;flex-shrink:0;position:relative;z-index:2}
 .in-row{display:flex;gap:.5rem;align-items:center}
 .action-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:.75rem .88rem;color:rgba(255,255,255,.5);cursor:pointer;font-size:.85rem;font-weight:700;line-height:1;transition:all .15s;flex-shrink:0;font-family:'Roboto Mono',monospace}
 .action-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
@@ -359,22 +366,54 @@ footer{padding:.85rem 1rem;background:rgba(13,15,22,.72);backdrop-filter:blur(16
 <!-- SPLASH SCREEN -->
 <div id="splash">
   <div class="splash-logo">
-    <div class="splash-logo-icon">
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-        <defs>
-          <linearGradient id="plane-grad-splash" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#f9c846"/>
-            <stop offset="50%" stopColor="#d97cf5"/>
-            <stop offset="100%" stopColor="#7c3aed"/>
-          </linearGradient>
-        </defs>
-        <path d="M6 10L42 24L6 38L12 24L6 10Z" fill="url(#plane-grad-splash)" opacity=".9"/>
-        <path d="M6 10L12 24L6 38L42 24L6 10Z" fill="url(#plane-grad-splash)"/>
-        <path d="M12 24L20 22L22 30Z" fill="rgba(255,255,255,0.25)"/>
-      </svg>
+    <div class="splash-brands">
+      <!-- Relay -->
+      <div class="splash-brand-item">
+        <div class="splash-brand-icon relay">
+          <svg width="42" height="42" viewBox="0 0 48 48" fill="none">
+            <defs>
+              <linearGradient id="plane-grad-splash" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#f9c846"/>
+                <stop offset="50%" stopColor="#d97cf5"/>
+                <stop offset="100%" stopColor="#7c3aed"/>
+              </linearGradient>
+            </defs>
+            <path d="M6 10L42 24L6 38L12 24L6 10Z" fill="url(#plane-grad-splash)" opacity=".9"/>
+            <path d="M6 10L12 24L6 38L42 24L6 10Z" fill="url(#plane-grad-splash)"/>
+            <path d="M12 24L20 22L22 30Z" fill="rgba(255,255,255,0.25)"/>
+          </svg>
+        </div>
+        <div class="splash-brand-name relay-name">Relay</div>
+      </div>
+
+      <!-- divider -->
+      <div class="splash-divider"></div>
+
+      <!-- Hydra -->
+      <div class="splash-brand-item">
+        <div class="splash-brand-icon hydra">
+          <svg width="42" height="42" viewBox="0 0 48 48" fill="none">
+            <defs>
+              <linearGradient id="hydra-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#60c8ff"/>
+                <stop offset="100%" stopColor="#0ea5e9"/>
+              </linearGradient>
+            </defs>
+            <!-- Hydra multi-head serpent icon -->
+            <path d="M24 36 C18 30 10 28 10 20 C10 14 15 10 20 12 C22 6 26 6 28 12 C33 10 38 14 38 20 C38 28 30 30 24 36Z" fill="url(#hydra-grad)" opacity=".9"/>
+            <circle cx="14" cy="16" r="3.5" fill="#38bdf8" opacity=".85"/>
+            <circle cx="24" cy="11" r="3.5" fill="#7dd3fc" opacity=".9"/>
+            <circle cx="34" cy="16" r="3.5" fill="#38bdf8" opacity=".85"/>
+            <path d="M14 16 Q16 22 24 36" stroke="#60c8ff" stroke-width="1.5" fill="none" opacity=".5"/>
+            <path d="M34 16 Q32 22 24 36" stroke="#60c8ff" stroke-width="1.5" fill="none" opacity=".5"/>
+            <path d="M24 11 L24 36" stroke="#7dd3fc" stroke-width="1.5" fill="none" opacity=".5"/>
+          </svg>
+        </div>
+        <div class="splash-brand-name hydra-name">Hydra</div>
+      </div>
     </div>
-    <div class="splash-wordmark">Relay</div>
-    <div class="splash-sub">Private group chat</div>
+
+    <div class="splash-sub">Powered by Relay</div>
     <div class="splash-dots">
       <div class="splash-dot"></div>
       <div class="splash-dot"></div>
@@ -756,7 +795,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key==='Enter') joinChat(); });
   document.getElementById('msgInput').addEventListener('keydown', e => { if (e.key==='Enter') sendMsg(); });
-  document.getElementById('msgInput').addEventListener('input', () => { if (document.getElementById('msgInput').value) setTyping(true); else setTyping(false); });
+  document.getElementById('msgInput').addEventListener('input', () => {
+    const inp = document.getElementById('msgInput');
+    if (inp.value) { setTyping(true); replaceEmojiCodes(inp); }
+    else setTyping(false);
+  });
   document.getElementById('srvNameInput').addEventListener('keydown', e => { if (e.key==='Enter') submitServer(); });
   document.getElementById('masterPwInput').addEventListener('keydown', e => { if (e.key==='Enter') deleteChat(); });
   document.getElementById('gifSearch').addEventListener('keydown', e => { if (e.key==='Enter') searchGifs(); });
@@ -1779,8 +1822,56 @@ document.addEventListener('click', e => {
 });
 
 // ─────────────────────────────────────────────────────────────
-//  UTILS
+//  EMOJI SHORTCODES  (type :skull: → 💀 etc)
 // ─────────────────────────────────────────────────────────────
+const EMOJI_MAP = {
+  ':smile:':'😊',':grin:':'😁',':laugh:':'😂',':lol:':'🤣',':wink:':'😉',
+  ':heart_eyes:':'😍',':kissing:':'😘',':cool:':'😎',':thinking:':'🤔',
+  ':raised_eyebrow:':'🤨',':neutral:':'😐',':expressionless:':'😑',
+  ':unamused:':'😒',':roll_eyes:':'🙄',':smirk:':'😏',':relieved:':'😌',
+  ':pensive:':'😔',':sleepy:':'😴',':drool:':'🤤',':lying:':'🤥',
+  ':shush:':'🤫',':nerd:':'🤓',':monocle:':'🧐',':zipper:':'🤐',
+  ':explode:':'🤯',':cowboy:':'🤠',':party:':'🥳',':dizzy_face:':'😵',
+  ':sob:':'😭',':cry:':'😢',':scream:':'😱',':angry:':'😠',':rage:':'😡',
+  ':skull:':'💀',':ghost:':'👻',':alien:':'👽',':robot:':'🤖',':poop:':'💩',
+  ':fire:':'🔥',':100:':'💯',':sparkles:':'✨',':star:':'⭐',':boom:':'💥',
+  ':heart:':'❤️',':broken_heart:':'💔',':blue_heart:':'💙',':green_heart:':'💚',
+  ':yellow_heart:':'💛',':purple_heart:':'💜',':black_heart:':'🖤',':white_heart:':'🤍',
+  ':thumbsup:':'👍',':thumbsdown:':'👎',':clap:':'👏',':raised_hands:':'🙌',
+  ':pray:':'🙏',':point_right:':'👉',':point_left:':'👈',':point_up:':'☝️',
+  ':wave:':'👋',':ok_hand:':'👌',':peace:':'✌️',':crossed_fingers:':'🤞',
+  ':muscle:':'💪',':fist:':'✊',':eyes:':'👀',':brain:':'🧠',':tongue:':'👅',
+  ':ear:':'👂',':nose:':'👃',':lips:':'👄',
+  ':dog:':'🐶',':cat:':'🐱',':wolf:':'🐺',':fox:':'🦊',':bear:':'🐻',
+  ':panda:':'🐼',':frog:':'🐸',':monkey:':'🐒',':pig:':'🐷',':cow:':'🐮',
+  ':shark:':'🦈',':snake:':'🐍',':dragon:':'🐉',':unicorn:':'🦄',':penguin:':'🐧',
+  ':pizza:':'🍕',':burger:':'🍔',':taco:':'🌮',':sushi:':'🍣',':cake:':'🎂',
+  ':coffee:':'☕',':beer:':'🍺',':wine:':'🍷',':cocktail:':'🍹',
+  ':soccer:':'⚽',':basketball:':'🏀',':football:':'🏈',':trophy:':'🏆',
+  ':guitar:':'🎸',':notes:':'🎵',':headphones:':'🎧',
+  ':check:':'✅',':x:':'❌',':warning:':'⚠️',':no_entry:':'🚫',
+  ':lock:':'🔒',':unlock:':'🔓',':key:':'🔑',':bell:':'🔔',
+  ':phone:':'📱',':computer:':'💻',':money:':'💰',':gem:':'💎',
+  ':rocket:':'🚀',':plane:':'✈️',':car:':'🚗',':house:':'🏠',':earth:':'🌍',
+  ':sun:':'☀️',':moon:':'🌙',':rainbow:':'🌈',':snowflake:':'❄️',':lightning:':'⚡',
+};
+
+// Build one regex from all keys (longest first to avoid partial matches)
+const EMOJI_REGEX = new RegExp(
+  Object.keys(EMOJI_MAP).sort((a,b)=>b.length-a.length).map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),
+  'g'
+);
+
+function replaceEmojiCodes(inp) {
+  const val = inp.value;
+  if (!val.includes(':')) return;
+  const replaced = val.replace(EMOJI_REGEX, m => EMOJI_MAP[m] || m);
+  if (replaced !== val) {
+    const pos = inp.selectionStart + (replaced.length - val.length);
+    inp.value = replaced;
+    inp.setSelectionRange(pos, pos);
+  }
+}
 function fmt(ts){
   if(!ts)return'';
   const d=new Date(ts);
