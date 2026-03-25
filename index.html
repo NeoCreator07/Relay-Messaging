@@ -452,6 +452,10 @@ footer{padding:.85rem 1rem;background:transparent;border-top:none;flex-shrink:0;
 /* ── LOGOUT / ACCOUNT ACTIONS ── */
 .pm-danger-btn{background:none;border:1px solid rgba(255,107,107,.3);border-radius:8px;padding:.45rem;font-family:'Roboto Mono',monospace;font-size:.72rem;font-weight:700;cursor:pointer;color:var(--danger);transition:all .15s;width:100%;letter-spacing:.04em}
 .pm-danger-btn:hover{background:var(--danger-dim);border-color:var(--danger)}
+.dbg-btn{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:7px;padding:.35rem .7rem;font-family:'Roboto Mono',monospace;font-size:.68rem;color:var(--dim);cursor:pointer;transition:all .15s;letter-spacing:.03em}
+.dbg-btn:hover{background:rgba(255,255,255,.1);color:var(--text);border-color:var(--text)}
+.dbg-btn.danger{border-color:rgba(255,107,107,.3);color:var(--danger)}
+.dbg-btn.danger:hover{background:var(--danger-dim);border-color:var(--danger)}
 </style>
 </head>
 <body>
@@ -575,7 +579,7 @@ footer{padding:.85rem 1rem;background:transparent;border-top:none;flex-shrink:0;
   <div id="sidebar-wrap">
     <div id="sidebar">
     <div class="sb-head">
-      <div class="sb-brand" onclick="document.getElementById('contact-modal').classList.add('show')" title="Contact">
+      <div class="sb-brand" id="relayLogoBtn" title="Contact (triple-click for more)">
         <svg width="22" height="22" viewBox="0 0 28 28" fill="none" style="flex-shrink:0">
           <rect width="28" height="28" rx="7" fill="url(#plane-grad-sb)"/>
           <defs><linearGradient id="plane-grad-sb" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#7c3aed"/><stop offset="100%" stopColor="#4f1d96"/></linearGradient></defs>
@@ -830,6 +834,27 @@ footer{padding:.85rem 1rem;background:transparent;border-top:none;flex-shrink:0;
       <div class="sb-label" style="margin-bottom:.7rem">Chat background</div>
       <div class="theme-grid" id="themeGrid"></div>
     </div>
+    <!-- debug access -->
+    <div style="border-top:1px solid var(--border);padding-top:.8rem;display:flex;flex-direction:column;gap:.5rem">
+      <div id="debug-lock-row" style="display:flex;gap:.5rem;align-items:center">
+        <input id="debugPwInput" type="password" placeholder="Master password for debug…" style="flex:1;background:var(--input-bg);border:1px solid var(--muted);border-radius:8px;padding:.45rem .75rem;color:var(--text);font-family:'Roboto Mono',monospace;font-size:.75rem;outline:none"/>
+        <button onclick="unlockDebug()" style="background:none;border:1px solid var(--border2);border-radius:8px;padding:.45rem .8rem;color:var(--dim);font-family:'Roboto Mono',monospace;font-size:.72rem;cursor:pointer;transition:all .15s;white-space:nowrap" onmouseover="this.style.borderColor='var(--text)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--dim)'">🔧 Debug</button>
+      </div>
+      <!-- debug panel — hidden until unlocked -->
+      <div id="debug-panel" style="display:none;flex-direction:column;gap:.6rem;background:rgba(255,107,107,.05);border:1px solid rgba(255,107,107,.2);border-radius:10px;padding:.85rem">
+        <div style="font-family:'Roboto Mono',monospace;font-size:.65rem;color:var(--danger);letter-spacing:.1em;margin-bottom:.2rem">🔧 DEBUG CONSOLE</div>
+        <div id="debug-info" style="font-family:'Roboto Mono',monospace;font-size:.7rem;color:var(--dim);line-height:1.7"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+          <button class="dbg-btn" onclick="debugAction('clearStorage')">Clear localStorage</button>
+          <button class="dbg-btn" onclick="debugAction('clearDrafts')">Clear all drafts</button>
+          <button class="dbg-btn" onclick="debugAction('clearVanta')">Reset Vanta theme</button>
+          <button class="dbg-btn" onclick="debugAction('reloadPresence')">Reload presence</button>
+          <button class="dbg-btn" onclick="debugAction('clearUnread')">Clear unread counts</button>
+          <button class="dbg-btn danger" onclick="debugAction('nukeAccount')">Delete my account</button>
+        </div>
+        <div id="debug-log" style="font-family:'Roboto Mono',monospace;font-size:.68rem;color:var(--online);max-height:80px;overflow-y:auto;background:rgba(0,0,0,.3);border-radius:6px;padding:.4rem .6rem;white-space:pre-wrap"></div>
+      </div>
+    </div>
     <div class="modal-btns" style="margin-top:.4rem">
       <button class="primary-btn" style="padding:.65rem 1.2rem" onclick="closeSettings()">Done</button>
     </div>
@@ -839,6 +864,71 @@ footer{padding:.85rem 1rem;background:transparent;border-top:none;flex-shrink:0;
 <!-- LIGHTBOX -->
 <div id="lightbox" onclick="this.classList.remove('show')">
   <img id="lightboxImg" src="" alt=""/>
+</div>
+
+<!-- SAFE HUB (secret — triple-click Relay logo) -->
+<style>
+.hub-link{display:flex;align-items:center;gap:.85rem;padding:.8rem 1rem;border-radius:12px;text-decoration:none;color:var(--text);transition:filter .15s;border:1px solid rgba(255,255,255,.06)}
+.hub-link:hover{filter:brightness(1.15)}
+.hub-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hub-label{font-size:.88rem;font-weight:600;color:var(--text)}
+.hub-sub{font-size:.72rem;color:var(--dim);margin-top:.1rem}
+.hub-secret-dot{width:6px;height:6px;border-radius:50%;background:#56f0a0;animation:pulseDot 1.5s ease infinite;display:inline-block;margin-left:.4rem;vertical-align:middle}
+</style>
+<div class="modal-bg" id="safe-hub-modal">
+  <div class="modal" style="max-width:380px;gap:.7rem">
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 16px rgba(124,58,237,.4)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div>
+        <div style="font-size:.95rem;font-weight:700;color:var(--text)">Safe Hub <span class="hub-secret-dot"></span></div>
+        <div style="font-family:'Roboto Mono',monospace;font-size:.6rem;color:var(--dim);letter-spacing:.1em">SECRET — KEEP THIS QUIET</div>
+      </div>
+      <button onclick="document.getElementById('safe-hub-modal').classList.remove('show')" style="margin-left:auto;background:none;border:none;color:var(--dim);cursor:pointer;font-size:1.1rem;line-height:1;padding:.2rem;border-radius:5px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--dim)'">✕</button>
+    </div>
+    <!-- Proton Mail -->
+    <a href="https://mail.proton.me" target="_blank" rel="noopener" class="hub-link" style="background:linear-gradient(135deg,rgba(99,102,241,.14),rgba(139,92,246,.07))">
+      <div class="hub-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </div>
+      <div><div class="hub-label">Proton Mail</div><div class="hub-sub">End-to-end encrypted email</div></div>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;opacity:.35;flex-shrink:0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>
+    <!-- Proton VPN -->
+    <a href="https://account.proton.me/vpn" target="_blank" rel="noopener" class="hub-link" style="background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(5,150,105,.06))">
+      <div class="hub-icon" style="background:linear-gradient(135deg,#10b981,#059669)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div><div class="hub-label">Proton VPN</div><div class="hub-sub">Your VPN — safe on any network</div></div>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;opacity:.35;flex-shrink:0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>
+    <!-- Proton Drive -->
+    <a href="https://drive.proton.me" target="_blank" rel="noopener" class="hub-link" style="background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(37,99,235,.06))">
+      <div class="hub-icon" style="background:linear-gradient(135deg,#3b82f6,#2563eb)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <div><div class="hub-label">Proton Drive</div><div class="hub-sub">Encrypted cloud storage</div></div>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;opacity:.35;flex-shrink:0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>
+    <!-- Tor Browser -->
+    <a href="https://www.torproject.org/download/" target="_blank" rel="noopener" class="hub-link" style="background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(79,29,150,.06))">
+      <div class="hub-icon" style="background:linear-gradient(135deg,#7c3aed,#4f1d96)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      </div>
+      <div><div class="hub-label">Tor Browser</div><div class="hub-sub">Anonymous browsing anywhere</div></div>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;opacity:.35;flex-shrink:0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>
+    <!-- Your Onion Server -->
+    <a href="https://adqjcaljw74gza7a5wxvintwpusa2ukt32bjayw4jand763aj3aa3had.onion.ly" target="_blank" rel="noopener" class="hub-link" style="background:linear-gradient(135deg,rgba(249,200,70,.1),rgba(234,179,8,.05))">
+      <div class="hub-icon" style="background:linear-gradient(135deg,#f9c846,#d97706)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </div>
+      <div><div class="hub-label">My Server</div><div class="hub-sub">Home server via Tor2Web</div></div>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;opacity:.35;flex-shrink:0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>
+    <div style="font-family:'Roboto Mono',monospace;font-size:.6rem;color:var(--dim);text-align:center;letter-spacing:.06em;padding:.2rem 0">🔒 THIS PANEL IS HIDDEN — TRIPLE-CLICK THE LOGO</div>
+  </div>
 </div>
 
 <!-- CONTACT MODAL -->
@@ -914,8 +1004,47 @@ async function sha256(s) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  BOOT
+//  ENCRYPTION  (AES-GCM for messages, SHA-256 for codes)
 // ─────────────────────────────────────────────────────────────
+const RELAY_SECRET = 'relay-msg-secret-v1-NeoCreator07'; // change this to any private string
+let _encKey = null;
+
+async function getEncKey() {
+  if (_encKey) return _encKey;
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(RELAY_SECRET), 'PBKDF2', false, ['deriveKey']);
+  _encKey = await crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt:enc.encode('relay-salt-2024'), iterations:100000, hash:'SHA-256' },
+    keyMaterial, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']
+  );
+  return _encKey;
+}
+
+async function encryptText(text) {
+  try {
+    const key = await getEncKey();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const enc = new TextEncoder();
+    const encrypted = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, enc.encode(text));
+    const buf = new Uint8Array(iv.byteLength + encrypted.byteLength);
+    buf.set(iv, 0); buf.set(new Uint8Array(encrypted), iv.byteLength);
+    return btoa(String.fromCharCode(...buf));
+  } catch(e) { return text; } // fallback: send plain if crypto fails
+}
+
+async function decryptText(ciphertext) {
+  try {
+    if (!ciphertext || typeof ciphertext !== 'string') return ciphertext;
+    // detect if it's encrypted (base64) or legacy plain text
+    const raw = atob(ciphertext);
+    const buf = new Uint8Array(raw.length);
+    for (let i=0;i<raw.length;i++) buf[i]=raw.charCodeAt(i);
+    const iv = buf.slice(0,12), data = buf.slice(12);
+    const key = await getEncKey();
+    const decrypted = await crypto.subtle.decrypt({ name:'AES-GCM', iv }, key, data);
+    return new TextDecoder().decode(decrypted);
+  } catch(e) { return ciphertext; } // fallback: return as-is (plain legacy messages)
+}
 window.addEventListener('DOMContentLoaded', () => {
   try {
   firebase.initializeApp(FB_CONFIG);
@@ -976,6 +1105,14 @@ window.addEventListener('DOMContentLoaded', () => {
     updateCharCounter(val);
     handleMentionInput(val, e.target.selectionStart);
     replaceEmojiCodes(e.target);
+    // save draft for current server
+    if (currentSrv) localStorage.setItem('draft_'+currentSrv.id, val);
+    else localStorage.setItem('draft__global', val);
+  });
+  // save draft on page close/refresh
+  window.addEventListener('beforeunload', () => {
+    const val = document.getElementById('msgInput').value;
+    if (currentSrv && val) localStorage.setItem('draft_'+currentSrv.id, val);
   });
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey||e.metaKey) && e.key==='k') { e.preventDefault(); document.getElementById('srvSearch')?.focus(); }
@@ -1029,7 +1166,14 @@ function openSettings() {
   document.getElementById('soundToggle').checked = localStorage.getItem('lc_sound') !== '0';
   document.getElementById('settings-modal').classList.add('show');
 }
-function closeSettings() { document.getElementById('settings-modal').classList.remove('show'); }
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('show');
+  // reset debug panel
+  document.getElementById('debug-panel').style.display = 'none';
+  document.getElementById('debug-lock-row').style.display = 'flex';
+  document.getElementById('debugPwInput').value = '';
+  document.getElementById('debug-log').textContent = '';
+}
 
 // ─────────────────────────────────────────────────────────────
 //  VANTA BACKGROUNDS
@@ -1137,8 +1281,70 @@ function updateSwatchActive() {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  ACCOUNTS
+//  EASTER EGG — triple-click logo opens Safe Hub
 // ─────────────────────────────────────────────────────────────
+(function() {
+  let clicks = 0, timer = null;
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#relayLogoBtn')) { clicks = 0; return; }
+    clicks++;
+    clearTimeout(timer);
+    if (clicks === 1) {
+      // single click still opens contact
+      timer = setTimeout(() => {
+        if (clicks === 1) document.getElementById('contact-modal').classList.add('show');
+        clicks = 0;
+      }, 400);
+    } else if (clicks === 3) {
+      clearTimeout(timer); clicks = 0;
+      document.getElementById('safe-hub-modal').classList.add('show');
+    } else {
+      timer = setTimeout(() => { clicks = 0; }, 400);
+    }
+  });
+})();
+
+// ─────────────────────────────────────────────────────────────
+//  AES-GCM MESSAGE ENCRYPTION
+// ─────────────────────────────────────────────────────────────
+// Shared secret — same for all users of the app
+const AES_SECRET = 'relay-e2e-k3y-2025-n30cr3at0r07';
+let aesKey = null;
+
+async function getAesKey() {
+  if (aesKey) return aesKey;
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(AES_SECRET), 'PBKDF2', false, ['deriveKey']);
+  aesKey = await crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt:enc.encode('relay-salt-2025'), iterations:100000, hash:'SHA-256' },
+    keyMaterial, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']
+  );
+  return aesKey;
+}
+
+async function encryptMsg(text) {
+  try {
+    const key = await getAesKey();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const enc = new TextEncoder();
+    const ct = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, enc.encode(text));
+    // encode as base64: iv + ciphertext
+    const combined = new Uint8Array(iv.length + ct.byteLength);
+    combined.set(iv); combined.set(new Uint8Array(ct), iv.length);
+    return btoa(String.fromCharCode(...combined));
+  } catch(e) { return text; } // fallback to plaintext on error
+}
+
+async function decryptMsg(b64) {
+  if (!b64 || !b64.match(/^[A-Za-z0-9+/]+=*$/)) return b64; // not encrypted
+  try {
+    const key = await getAesKey();
+    const combined = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const iv = combined.slice(0, 12), ct = combined.slice(12);
+    const pt = await crypto.subtle.decrypt({ name:'AES-GCM', iv }, key, ct);
+    return new TextDecoder().decode(pt);
+  } catch(e) { return b64; } // fallback — show raw if decrypt fails
+}
 let myUsername = null;
 let myStatus = 'online';
 
@@ -1274,7 +1480,7 @@ function switchServer(id, srv) {
   if (!srv) return;
 
   // if private, prompt for code first
-  if (srv.private && (srv.codeHash || srv.code)) {
+  if (srv.private && srv.codeHash) {
     pendingSrv = { id, srv };
     document.getElementById('srvJoinCodeInput').value = '';
     document.getElementById('srv-join-err').textContent = '';
@@ -1293,6 +1499,12 @@ function doSwitchServer(id, srv) {
   if (currentSrv && srvChangeListeners[currentSrv.id]) {
     db.ref('messages/'+currentSrv.id).off('child_changed', srvChangeListeners[currentSrv.id]);
     delete srvChangeListeners[currentSrv.id];
+  }
+  // save current draft before switching
+  if (currentSrv) {
+    const cur = document.getElementById('msgInput').value;
+    if (cur) localStorage.setItem('draft_'+currentSrv.id, cur);
+    else localStorage.removeItem('draft_'+currentSrv.id);
   }
   if (currentSrv) {
     stopTypingListener(currentSrv.id);
@@ -1316,7 +1528,13 @@ function doSwitchServer(id, srv) {
   document.getElementById('msgInput').placeholder = isReadOnly ? 'This server is read-only…' : 'Message…';
   document.getElementById('readonlyBar').classList.toggle('show', isReadOnly);
   document.getElementById('deleteChatBtn').style.display = 'block';
-  if (!isReadOnly) document.getElementById('msgInput').focus();
+  if (!isReadOnly) {
+    document.getElementById('msgInput').focus();
+    // restore draft for this server
+    const draft = localStorage.getItem('draft_'+id) || '';
+    document.getElementById('msgInput').value = draft;
+    updateCharCounter(draft);
+  }
   renderSrvList(); broadcastPresence();
   typingRef = db.ref('typing/'+id+'/'+myId);
   typingRef.onDisconnect().remove();
@@ -1332,7 +1550,13 @@ function doSwitchServer(id, srv) {
     const wrap = document.querySelector(`.msg[data-key="${snap.key}"]`);
     if (!wrap) return;
     const body = wrap.querySelector('.msg-body');
-    if (body && !body.querySelector('.msg-edit-row')) buildMsgContent(body, data);
+    if (!body || body.querySelector('.msg-edit-row')) return;
+    const applyEdit = (d) => buildMsgContent(body, d);
+    if (data.enc && data.text) {
+      decryptMsg(data.text).then(plain => applyEdit({ ...data, text: plain, enc: false }));
+    } else {
+      applyEdit(data);
+    }
   });
   srvChangeListeners[id] = changeListener;
 }
@@ -1344,9 +1568,13 @@ function submitSrvJoinCode() {
   const err  = document.getElementById('srv-join-err');
   if (!code) { err.textContent = '⚠ Enter the code.'; return; }
   sha256(code).then(h => {
-    const stored = pendingSrv.srv.codeHash || pendingSrv.srv.code || '';
-    const ok = pendingSrv.srv.codeHash ? h === pendingSrv.srv.codeHash : code === stored;
-    if (!ok) { err.textContent = '⚠ Wrong code.'; document.getElementById('srvJoinCodeInput').value=''; return; }
+    // always compare hashes — stored as codeHash
+    const storedHash = pendingSrv.srv.codeHash || '';
+    if (!storedHash || h !== storedHash) {
+      err.textContent = '⚠ Wrong code.';
+      document.getElementById('srvJoinCodeInput').value = '';
+      return;
+    }
     document.getElementById('srv-join-modal').classList.remove('show');
     doSwitchServer(pendingSrv.id, pendingSrv.srv);
     pendingSrv = null;
@@ -1365,6 +1593,7 @@ function openCreateServer() {
   document.getElementById('masterPwSrvInput').value = '';
   document.getElementById('srv-err').textContent = '';
   document.getElementById('srvCodeField').style.display = 'flex';
+  document.getElementById('masterPwFieldSrv').style.display = 'none';
   document.getElementById('srv-modal').classList.add('show');
   setTimeout(() => document.getElementById('srvNameInput').focus(), 50);
 }
@@ -1380,6 +1609,7 @@ function openRenameServer(e, id) {
   document.getElementById('masterPwSrvInput').value = '';
   document.getElementById('srv-err').textContent = '';
   document.getElementById('srvCodeField').style.display = 'none';
+  document.getElementById('masterPwFieldSrv').style.display = 'flex';
   document.getElementById('srv-modal').classList.add('show');
   setTimeout(() => document.getElementById('srvNameInput').focus(), 50);
 }
@@ -1438,6 +1668,28 @@ function submitServer() {
   const action = btn.textContent;
 
   if (action !== 'Delete' && action !== 'Lock' && action !== 'Unlock' && (!name || name.length < 2)) { err.textContent = '⚠ Name must be at least 2 letters.'; return; }
+
+  // Create doesn't need master password — anyone can make a server
+  if (action === 'Create') {
+    err.textContent = ''; btn.disabled = true; btn.textContent = 'Creating…';
+    const srvName = name.toLowerCase().replace(/\s+/g,'-');
+    const id = slugify(srvName)+'-'+Date.now().toString(36);
+    const isPrivate = code.length > 0;
+    if (isPrivate) {
+      sha256(code).then(codeHash => {
+        db.ref('servers/'+id).set({ name: srvName, id, private: true, codeHash, createdBy: myName });
+        closeSrvModal();
+        setTimeout(() => doSwitchServer(id, { name: srvName, private: true, codeHash }), 300);
+      });
+    } else {
+      db.ref('servers/'+id).set({ name: srvName, id, private: false, createdBy: myName });
+      closeSrvModal();
+      setTimeout(() => doSwitchServer(id, { name: srvName, private: false }), 300);
+    }
+    return;
+  }
+
+  // Admin actions require master password
   if (!pw) { err.textContent = '⚠ Enter the master password.'; return; }
   err.textContent = ''; btn.disabled = true; btn.textContent = 'Checking…';
 
@@ -1487,19 +1739,8 @@ function submitServer() {
       closeSrvModal();
 
     } else {
-      // Create
-      const srvName = name.toLowerCase().replace(/\s+/g,'-');
-      const id = slugify(srvName)+'-'+Date.now().toString(36);
-      const isPrivate = code.length > 0;
-      if (isPrivate) {
-        db.ref('servers/'+id).set({ name: srvName, id, private: true, code });
-        closeSrvModal();
-        setTimeout(() => doSwitchServer(id, { name: srvName, private: true, code }), 300);
-      } else {
-        db.ref('servers/'+id).set({ name: srvName, id, private: false });
-        closeSrvModal();
-        setTimeout(() => doSwitchServer(id, { name: srvName, private: false }), 300);
-      }
+      // fallback close
+      closeSrvModal();
     }
   }).catch(e => { err.textContent = '⚠ ' + e.message; btn.disabled=false; btn.textContent=action; });
 }
@@ -1552,13 +1793,16 @@ function sendMsg() {
 
   if (!raw) return;
   inp.value = '';
-  const msg = { name: myName, text: censor(raw), ts: firebase.database.ServerValue.TIMESTAMP, type: 'text' };
-  if (replyingTo) {
-    msg.replyTo = { key: replyingTo.key, name: replyingTo.name, text: replyingTo.text };
-    clearReply();
-  }
-  db.ref('messages/'+currentSrv.id).push(msg)
-    .catch(() => { sysMsg('⚠ Message failed.'); inp.value = raw; });
+  if (currentSrv) localStorage.removeItem('draft_'+currentSrv.id);
+  encryptMsg(censor(raw)).then(encrypted => {
+    const msg = { name: myName, text: encrypted, ts: firebase.database.ServerValue.TIMESTAMP, type: 'text', enc: true };
+    if (replyingTo) {
+      msg.replyTo = { key: replyingTo.key, name: replyingTo.name, text: replyingTo.text };
+      clearReply();
+    }
+    db.ref('messages/'+currentSrv.id).push(msg)
+      .catch(() => { sysMsg('⚠ Message failed.'); inp.value = raw; });
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1754,6 +1998,13 @@ function appendEmbedCard(body, meta, url) {
 }
 
 function appendMsg(key, data) {
+  // decrypt text if encrypted
+  if (data.enc && data.text) {
+    decryptMsg(data.text).then(plain => {
+      appendMsg(key, { ...data, text: plain, enc: false });
+    });
+    return;
+  }
   const box=document.getElementById('messages'), isSelf=data.name===myName;
   maybeInsertDateDivider(data.ts);
   const wrap=document.createElement('div'); wrap.className='msg '+(isSelf?'self':'other'); wrap.dataset.key=key;
@@ -1885,9 +2136,11 @@ function startEdit(wrap, key, data) {
   save.onclick = () => {
     const newText = inp.value.trim();
     if (!newText || newText === currentText) { buildMsgContent(body, data); return; }
-    db.ref('messages/'+currentSrv.id+'/'+key).update({ text: censor(newText), edited: true })
-      .catch(() => sysMsg('⚠ Edit failed.'));
-    buildMsgContent(body, { ...data, text: censor(newText), edited: true });
+    encryptText(censor(newText)).then(encrypted => {
+      db.ref('messages/'+currentSrv.id+'/'+key).update({ text: encrypted, edited: true, enc: true })
+        .catch(() => sysMsg('⚠ Edit failed.'));
+      buildMsgContent(body, { ...data, text: censor(newText), edited: true, enc: false });
+    });
   };
   inp.addEventListener('keydown', e => {
     if (e.key==='Enter') save.onclick();
@@ -2143,8 +2396,79 @@ document.addEventListener('click', e => {
 });
 
 // ─────────────────────────────────────────────────────────────
-//  SOUND
+//  DEBUG MENU
 // ─────────────────────────────────────────────────────────────
+function unlockDebug() {
+  const pw = document.getElementById('debugPwInput').value;
+  if (pw !== 'qwerty') {
+    document.getElementById('debugPwInput').style.borderColor = 'var(--danger)';
+    setTimeout(() => document.getElementById('debugPwInput').style.borderColor = '', 1000);
+    return;
+  }
+  document.getElementById('debug-lock-row').style.display = 'none';
+  const panel = document.getElementById('debug-panel');
+  panel.style.display = 'flex';
+  // populate info
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('lc_') || k.startsWith('draft_'));
+  const info = [
+    `user:       ${myUsername || '—'}`,
+    `displayName:${myName || '—'}`,
+    `myId:       ${myId || '—'}`,
+    `status:     ${myStatus || '—'}`,
+    `server:     ${currentSrv?.name || '—'} (${currentSrv?.id || '—'})`,
+    `vanta:      ${activeVantaId}`,
+    `notifs:     ${notificationsOn}`,
+    `sound:      ${localStorage.getItem('lc_sound') !== '0'}`,
+    `theme:      ${localStorage.getItem('lc_theme') || 'dark'}`,
+    `localStorage keys: ${keys.length}`,
+    `  ${keys.join(', ')}`,
+  ].join('\n');
+  document.getElementById('debug-info').textContent = info;
+}
+
+function debugLog(msg) {
+  const el = document.getElementById('debug-log');
+  if (!el) return;
+  el.textContent += '[' + new Date().toLocaleTimeString() + '] ' + msg + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+
+function debugAction(action) {
+  switch(action) {
+    case 'clearStorage':
+      if (!confirm('Clear all Relay localStorage? You will be logged out.')) return;
+      Object.keys(localStorage).filter(k=>k.startsWith('lc_')||k.startsWith('draft_')).forEach(k=>localStorage.removeItem(k));
+      debugLog('localStorage cleared. Reloading…');
+      setTimeout(()=>location.reload(), 800);
+      break;
+    case 'clearDrafts':
+      Object.keys(localStorage).filter(k=>k.startsWith('draft_')).forEach(k=>localStorage.removeItem(k));
+      debugLog('All drafts cleared.');
+      break;
+    case 'clearVanta':
+      localStorage.removeItem('lc_vanta');
+      applyVanta('none');
+      debugLog('Vanta theme reset to none.');
+      break;
+    case 'reloadPresence':
+      if (presenceRef) { presenceRef.remove().then(()=>{ startPresence(); debugLog('Presence reloaded.'); }); }
+      else debugLog('No presence ref active.');
+      break;
+    case 'clearUnread':
+      Object.keys(localStorage).filter(k=>k.startsWith('lc_read_')).forEach(k=>localStorage.removeItem(k));
+      newMsgCount=0; updateScrollBadge();
+      debugLog('Unread counts cleared.');
+      break;
+    case 'nukeAccount':
+      if (!myUsername) { debugLog('Not logged in.'); return; }
+      if (!confirm('PERMANENTLY delete your account @'+myUsername+'? This cannot be undone.')) return;
+      db.ref('accounts/'+myUsername).remove().then(()=>{
+        debugLog('Account deleted. Logging out…');
+        setTimeout(()=>{ localStorage.clear(); location.reload(); }, 800);
+      }).catch(e=>debugLog('Error: '+e.message));
+      break;
+  }
+}
 function playPing() {
   if (localStorage.getItem('lc_sound') === '0') return;
   try {
